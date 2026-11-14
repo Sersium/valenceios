@@ -157,7 +157,7 @@ def feed(path, version, sha):
         _, info = metadata(ipa)
     repo = os.environ['GITHUB_REPOSITORY']
     base = f'https://github.com/{repo}/releases/download/latest'
-    date = datetime.now(timezone.utc).isoformat()
+    date = datetime.now(timezone.utc).isoformat(timespec='seconds')
     description = f'Valenced iOS · Discord {info["CFBundleShortVersionString"]} · build {version}\nSource: {sha}\nAI-assisted fork. Device and third-party plugin compatibility require testing.'
     record = dict(version=version, date=date, downloadURL=base + '/Discord_Valenced.ipa', size=Path(path).stat().st_size, localizedDescription=description)
     app = dict(name='Discord (Valenced)', bundleIdentifier=info['CFBundleIdentifier'], developerName='Valenced & Sersium', iconURL=f'https://raw.githubusercontent.com/{repo}/main/assets/icon.png', tintColor='5865F2', versionDate=date, versionDescription=description, versions=[record], **{k: v for k, v in record.items() if k != 'date'})
