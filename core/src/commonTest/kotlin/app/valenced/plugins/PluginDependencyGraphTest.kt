@@ -80,7 +80,7 @@ class PluginDependencyGraphTest {
     }
 
     @Test
-    fun `an out-of-range dependency is unsatisfied, not missing`() {
+    fun `an out-of-range dependency is unsatisfied and not missing`() {
         val graph = graphOf(
             manifest("a", dependencies = arrayOf("b" to dep(">=2.0"))),
             manifest("b", version = "1.0"),
@@ -112,7 +112,7 @@ class PluginDependencyGraphTest {
     // region satisfiedDependencies
 
     @Test
-    fun `satisfied dependencies exclude the out-of-range, optional or not`() {
+    fun `satisfied dependencies exclude the out-of-range and optional or not`() {
         val graph = graphOf(
             manifest(
                 "a",

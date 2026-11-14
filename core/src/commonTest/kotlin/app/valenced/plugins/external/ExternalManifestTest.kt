@@ -55,7 +55,7 @@ class ExternalManifestTest {
     }
 
     @Test
-    fun `icons are asset names or data urls, never fetchable`() {
+    fun `icons are asset names or data urls and never fetchable`() {
         assertEquals("ic_asset", manifest(icon = "ic_asset").toPluginManifest().icon)
         assertEquals("data:image/png;base64,AA", manifest(icon = "data:image/png;base64,AA").toPluginManifest().icon)
         assertNull(manifest(icon = "https://example.test/icon.png").toPluginManifest().icon)

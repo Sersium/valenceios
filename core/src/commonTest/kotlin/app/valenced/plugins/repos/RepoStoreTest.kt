@@ -46,7 +46,7 @@ class RepoStoreTest {
     }
 
     @Test
-    fun `relative, reserved and duplicate URLs are rejected`() {
+    fun `relative and reserved and duplicate URLs are rejected`() {
         assertFailsWith<PluginSystemError> { RepoStore.set(listOf(UserRepo("repo.example/"))) }
         assertFailsWith<PluginSystemError> { RepoStore.set(listOf(UserRepo(INTERNAL_REPO_URL))) }
         assertFailsWith<PluginSystemError> {

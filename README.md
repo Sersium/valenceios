@@ -7,7 +7,7 @@ An iOS-only fork of [Valenced](https://github.com/Valenced/valenced) for sideloa
 
 Every push to `main` tests, builds, injects, and validates the app, then replaces the latest IPA and Feather feed. The exact supplied decrypted IPA is stored in the `base-ipa` release and checked against `ipa-source.json`. Feather supplies your signing certificate.
 
-Targets ARM64 iPhones, including iPhone 17. Build checks cannot establish crash-free operation on a physical phone. Third-party plugins require device testing; downloaded native plugins also require valid iOS signing. Shake the phone to open recovery if a plugin causes problems.
+Targets ARM64 iPhones, including iPhone 17. Build checks cannot establish crash-free operation on a physical phone. Third-party JavaScript plugins require device testing; native-only plugins are disabled in release builds. Shake the phone to open recovery if a plugin causes problems.
 
 **AI disclaimer:** This fork and its build pipeline were prepared with AI assistance. It is unofficial and is not endorsed by Discord or the upstream authors.
 

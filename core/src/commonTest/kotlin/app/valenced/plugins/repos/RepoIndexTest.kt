@@ -44,7 +44,7 @@ class RepoIndexTest {
     }
 
     @Test
-    fun `drops javascript and file urls, and everything else that isn't absolute`() {
+    fun `drops javascript and file urls and and everything else that isn't absolute`() {
         for (url in listOf(
             "javascript:alert(1)",
             "file:///etc/passwd",
@@ -93,7 +93,7 @@ class RepoIndexTest {
     }
 
     @Test
-    fun `icons are asset names or data urls, never fetchable`() {
+    fun `icons are asset names or data urls and never fetchable`() {
         val asset = parseRepoIndex(index(version("https://example.test/a.zip"), icon = "ic_asset"), REPO_URL, log)
         val remote = parseRepoIndex(
             index(version("https://example.test/a.zip"), icon = "https://example.test/icon.png"),
