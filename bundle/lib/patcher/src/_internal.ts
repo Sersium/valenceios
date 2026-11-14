@@ -165,7 +165,8 @@ export function createProxyTarget(target: UnknownFunction): any {
             // biome-ignore lint/complexity/useArrowFunction: We need a function that has a constructor
             return function () {}.bind(undefined)
         } catch {
-            return () => {}
+            // Methods stay non-constructible when the Hermes build lowers arrows.
+            return { method() {} }.method
         }
     }
 

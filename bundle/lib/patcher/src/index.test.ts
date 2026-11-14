@@ -1,4 +1,7 @@
+import { runInNewContext } from 'node:vm'
+import { rolldown } from 'rolldown'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import hermesSwcPlugin from '../../../scripts/plugins/hermes-swc'
 import { after, before, HookPriority, instead } from './index'
 
 describe('Patcher', () => {
@@ -497,6 +500,59 @@ describe('Patcher', () => {
     })
 
     describe('proxy targets', () => {
+        test('Hermes build can stack hooks on an async message sender', async () => {
+            const build = await rolldown({
+                input: new URL('./index.ts', import.meta.url).pathname,
+                plugins: [hermesSwcPlugin()],
+            })
+            try {
+                const { output } = await build.generate({
+                    format: 'iife',
+                    name: 'patcher',
+                })
+                const patcher = runInNewContext(
+                    `${output[0].code}; patcher;`,
+                ) as typeof import('./index')
+                const sent = vi.fn()
+                const sendMessage = async (content: string) => {
+                    sent(content)
+                    return content
+                }
+                const parent = { sendMessage }
+                const unpatchNitro = patcher.instead(
+                    parent,
+                    'sendMessage',
+                    async ([content], original) => original(`${content}!`),
+                )
+                const unpatchGif = patcher.instead(
+                    parent,
+                    'sendMessage',
+                    (args, original) =>
+                        args[0] === 'gif' ? 'draft' : original(...args),
+                )
+
+                expect(await parent.sendMessage('gif')).toBe('draft')
+                expect(sent).not.toHaveBeenCalled()
+                expect(await parent.sendMessage('text')).toBe('text!')
+                expect(
+                    Object.getOwnPropertyDescriptor(
+                        parent.sendMessage,
+                        'prototype',
+                    ),
+                ).toBeUndefined()
+                expect(() =>
+                    Reflect.construct(parent.sendMessage, []),
+                ).toThrow()
+
+                unpatchGif()
+                expect(await parent.sendMessage('gif')).toBe('gif!')
+                unpatchNitro()
+                expect(parent.sendMessage).toBe(sendMessage)
+            } finally {
+                await build.close()
+            }
+        })
+
         class TestClass {
             static helper = 1
             value = 1
