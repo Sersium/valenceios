@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timezone
 import plistlib
 import posixpath
+import re
 import struct
 import sys
 import zipfile
@@ -75,6 +76,36 @@ def system_library(dependency, search_paths):
             and '/' not in dependency[7:] and '/usr/lib/swift' in search_paths)
 
 
+def symbols(binary):
+    defined, undefined = set(), set()
+    for command, data in commands(binary):
+        if command != 2:  # LC_SYMTAB
+            continue
+        offset, count, strings, size = struct.unpack_from('<4I', data, 8)
+        if offset + count * 16 > len(binary) or strings + size > len(binary):
+            raise ValueError('Truncated Mach-O symbol table')
+        for index in range(count):
+            name, kind, _, _, _ = struct.unpack_from('<IBBHQ', binary, offset + index * 16)
+            if not kind & 1 or kind & 0xe0:
+                continue
+            end = binary.find(b'\0', strings + name, strings + size)
+            if name >= size or end == -1:
+                raise ValueError('Invalid Mach-O symbol name')
+            symbol = binary[strings + name:end].decode()
+            (undefined if kind & 0xe == 0 else defined).add(symbol)
+    return defined, undefined
+
+
+def verify_symbols(tweak, providers):
+    defined, undefined = symbols(tweak)
+    expected = {'_' + name for name in re.findall(r'\b(ValencedCore_\w+)\(', (ROOT / 'ios/Headers/ValencedCore.h').read_text())}
+    assert expected <= defined, f'Missing native core definitions: {sorted(expected - defined)}'
+    assert not any(s.startswith('_ValencedCore_') for s in undefined), 'Native core calls remain unresolved'
+    required = {s for s in undefined if '8facebook3jsi' in s or s.startswith('_MSHook')}
+    available = set().union(*(symbols(binary)[0] for binary in providers))
+    assert required <= available, f'Unresolved JSI/hook symbols: {sorted(required - available)}'
+
+
 def sections(binary):
     result = {}
     for command, data in commands(binary):
@@ -121,7 +152,9 @@ def verify(path, injected=False):
             assert selector in main, f'Missing React Native hook: {selector!r}'
         if injected:
             assert '@rpath/ValencedTweak.dylib' in deps, 'Discord does not load Valenced'
-            embedded = sections(ipa.read(app + 'Frameworks/ValencedTweak.dylib'))
+            tweak = ipa.read(app + 'Frameworks/ValencedTweak.dylib')
+            verify_symbols(tweak, [main, ipa.read(app + 'Frameworks/hermesvm.framework/hermesvm'), ipa.read(app + 'Frameworks/CydiaSubstrate.framework/CydiaSubstrate')])
+            embedded = sections(tweak)
             assert bytecode_version(embedded['__vbundle']) == SOURCE['hermesVersion'], 'Hermes bytecode mismatch'
             manifest = json.loads(embedded['__vmanifest'])
             ids = {p['id'] for p in manifest['plugins']}

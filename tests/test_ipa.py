@@ -18,6 +18,16 @@ def binary(commands=b'', count=0):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_native_symbol_definitions_and_unresolved_calls(self):
+        strings = b'\0_ValencedCore_FreeString\0_ValencedCore_Missing\0'
+        table = struct.pack('<IBBHQ', 1, 0xf, 1, 0, 100) + struct.pack('<IBBHQ', strings.index(b'_ValencedCore_Missing'), 1, 0, 0, 0)
+        command = struct.pack('<6I', 2, 24, 56, 2, 88, len(strings))
+        defined, undefined = ipa.symbols(binary(command, 1) + table + strings)
+        self.assertEqual(defined, {'_ValencedCore_FreeString'})
+        self.assertEqual(undefined, {'_ValencedCore_Missing'})
+        with self.assertRaises(AssertionError):
+            ipa.verify_symbols(binary(command, 1) + table + strings, [])
+
     def test_rejects_encrypted_or_malformed_binary(self):
         encrypted = struct.pack('<6I', 0x2c, 24, 0, 0, 1, 0)
         for data in (b'bad', binary(encrypted, 1), binary(struct.pack('<II', 0xc, 100), 1)):

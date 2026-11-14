@@ -3,9 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 kotlin {
-    iosArm64().binaries.framework {
+    iosArm64().binaries.staticLib {
         baseName = "ValencedCore"
-        isStatic = true
     }
     iosSimulatorArm64()
     sourceSets {
