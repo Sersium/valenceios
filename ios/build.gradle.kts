@@ -2,16 +2,11 @@ plugins {
     base
 }
 
-val isMacHost = System.getProperty("os.name").equals("Mac OS X", ignoreCase = true)
-
 val theosDir = providers.environmentVariable("THEOS")
     .orElse(providers.systemProperty("user.home").map { "$it/theos" })
 
 val coreFrameworkDir = rootProject.layout.projectDirectory
-    .dir("core/build/bin/iosArm64/debugFramework/ValencedCore.framework")
-
-val coreStaticLib = rootProject.layout.projectDirectory
-    .file("core/build/bin/iosArm64/debugStatic/libValencedCore.a")
+    .dir("core/build/bin/iosArm64/releaseFramework/ValencedCore.framework")
 
 /** The release JS bundle from `:bundle`, shipped next to the tweak. */
 val bundleScope = configurations.dependencyScope("releaseBundle")
@@ -28,15 +23,10 @@ val packageTweak = tasks.register<Exec>("packageTweak") {
     environment("THEOS", theosDir.get())
     inputs.files(bundleDir)
     doFirst { environment("VALENCED_BUNDLE_DIR", bundleDir.singleFile.absolutePath) }
-    if (isMacHost) {
-        dependsOn(":core:linkDebugFrameworkIosArm64")
-        environment("VALENCED_CORE_FW", coreFrameworkDir.asFile.absolutePath)
-    } else {
-        dependsOn(":core:linkValencedCoreStaticIosArm64")
-        environment("VALENCED_CORE_LIB", coreStaticLib.asFile.absolutePath)
-    }
+    dependsOn(":core:linkReleaseFrameworkIosArm64")
+    environment("VALENCED_CORE_FW", coreFrameworkDir.asFile.absolutePath)
 
-    onlyIf("Theos is installed ($theosDir)") { file(theosDir.get()).isDirectory }
+    doFirst { check(file(theosDir.get()).isDirectory) { "Theos is required" } }
 }
 
 tasks.named("assemble") {

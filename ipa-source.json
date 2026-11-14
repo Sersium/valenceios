@@ -1,0 +1,9 @@
+{
+  "tag": "base-ipa",
+  "asset": "Discord_353.0_decrypted.ipa",
+  "sha256": "f4c7394abba63de22e1dd1ad2199dad50d841d3f200c1073924f8823e466c07d",
+  "bundleIdentifier": "com.hammerandchisel.discord",
+  "version": "353.0",
+  "build": "122208",
+  "hermesVersion": 98
+}

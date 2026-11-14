@@ -1,0 +1,108 @@
+name: Build and release iOS
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check packaging tests
+        run: python3 -m unittest discover -s tests -v
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version-file: bundle/.dvmrc
+          cache: true
+          cache-hash: ${{ hashFiles('bundle/deno.lock') }}
+      - name: Install Theos and injector
+        run: |
+          brew install make ldid
+          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+          echo "THEOS=$RUNNER_TEMP/theos" >> "$GITHUB_ENV"
+          git clone --quiet --recursive https://github.com/theos/theos "$RUNNER_TEMP/theos"
+          git -C "$RUNNER_TEMP/theos" checkout 8167f59de02fd32cf45b16bfcb1330dfa5c9974c
+          git -C "$RUNNER_TEMP/theos" submodule update --init --recursive
+          pipx install 'https://github.com/asdfzxcvbn/pyzule-rw/archive/740d3716dcd98c20c000f12cdb88f1f0b2a533a4.zip'
+      - name: Download exact supplied Discord IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download base-ipa --repo "$GITHUB_REPOSITORY" --pattern Discord_353.0_decrypted.ipa --dir "$RUNNER_TEMP"
+      - name: Validate decrypted input
+        run: python3 scripts/ipa.py base "$RUNNER_TEMP/Discord_353.0_decrypted.ipa"
+      - name: Install locked JavaScript dependencies and test plugins
+        working-directory: bundle
+        run: |
+          deno install --frozen
+          node node_modules/vitest/vitest.mjs run
+      - name: Test shared plugin core and build the iOS loader
+        run: ./gradlew --no-daemon :core:iosSimulatorArm64Test :ios:packageTweak
+      - name: Inject Valenced and validate final IPA
+        run: |
+          cyan -i "$RUNNER_TEMP/Discord_353.0_decrypted.ipa" -o Discord_Valenced.ipa -uwesq -f ios/packages/*.deb
+          python3 scripts/ipa.py verify Discord_Valenced.ipa
+          shasum -a 256 Discord_Valenced.ipa > SHA256SUMS
+      - name: Generate Feather source
+        run: python3 scripts/ipa.py feed Discord_Valenced.ipa "353.0.$GITHUB_RUN_NUMBER" "$GITHUB_SHA"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: valenced-ios-${{ github.sha }}
+          path: |
+            Discord_Valenced.ipa
+            feather.json
+            SHA256SUMS
+            release-notes.md
+            ios/packages/*.deb
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload failing test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+          if-no-files-found: ignore
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: valenced-ios-${{ github.sha }}
+      - name: Replace latest release after validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)" != "$GITHUB_SHA" ]; then
+            echo 'A newer commit exists; keeping its release current.'
+            exit 0
+          fi
+          shasum -a 256 -c SHA256SUMS
+          if ! gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create latest --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title 'Valenced iOS · Latest' --notes-file release-notes.md
+          fi
+          gh release upload latest Discord_Valenced.ipa feather.json SHA256SUMS --repo "$GITHUB_REPOSITORY" --clobber
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/latest" -f sha="$GITHUB_SHA" -F force=true
+          gh release edit latest --repo "$GITHUB_REPOSITORY" --draft=false --latest --title "Valenced iOS · Discord 353.0 · Build $GITHUB_RUN_NUMBER" --notes-file release-notes.md

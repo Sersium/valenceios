@@ -1,5 +1,4 @@
-TARGET := iphone:clang:latest:14.0
-SDK = iPhoneOS16.5
+TARGET := iphone:clang:latest:16.0
 ARCHS = arm64
 INSTALL_TARGET_PROCESSES = Discord
 THEOS_PACKAGE_SCHEME = rootless
@@ -16,7 +15,7 @@ TWEAK_NAME = ValencedTweak
 ValencedTweak_FILES = $(wildcard Sources/*.x Sources/*.xm Sources/*.m Sources/*.mm Sources/**/*.x Sources/**/*.xm Sources/**/*.m Sources/**/*.mm)
 ValencedTweak_CFLAGS = -fobjc-arc -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -DVERSION_CODE='@"$(VERSION_CODE)"' -I$(THEOS_PROJECT_DIR)/Headers
 ValencedTweak_CCFLAGS = -std=c++17 -Wno-c++11-narrowing -I$(THEOS_PROJECT_DIR)/Headers
-ValencedTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers
+ValencedTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers Security AuthenticationServices
 ValencedTweak_LDFLAGS = -undefined dynamic_lookup -lz
 
 ifneq ($(VALENCED_CORE_LIB),)
