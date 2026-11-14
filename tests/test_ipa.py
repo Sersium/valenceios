@@ -35,6 +35,16 @@ class PackagingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ipa.bytecode_version(b'javascript')
 
+    def test_system_swift_requires_its_runtime_search_path(self):
+        path = b'/usr/lib/swift\0'
+        size = (12 + len(path) + 7) // 8 * 8
+        command = struct.pack('<III', 0x8000001c, size, 12) + path
+        paths = list(ipa.runpaths(binary(command.ljust(size, b'\0'), 1)))
+        self.assertTrue(ipa.system_library('@rpath/libswiftCore.dylib', paths))
+        self.assertFalse(ipa.system_library('@rpath/libswiftCore.dylib', []))
+        self.assertFalse(ipa.system_library('@rpath/ValencedTweak.dylib', paths))
+        self.assertFalse(ipa.system_library('@rpath/libswift/other.dylib', paths))
+
     def test_rolling_feather_feed(self):
         with tempfile.TemporaryDirectory() as directory:
             original = os.getcwd()

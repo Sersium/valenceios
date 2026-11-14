@@ -59,6 +59,22 @@ def libraries(binary):
             yield data[offset:].split(b'\0')[0].decode()
 
 
+def runpaths(binary):
+    for command, data in commands(binary):
+        if command == 0x8000001c:
+            offset = struct.unpack_from('<I', data, 8)[0]
+            if offset < 12 or offset >= len(data) or b'\0' not in data[offset:]:
+                raise ValueError('Invalid runtime search path')
+            yield data[offset:].split(b'\0')[0].decode()
+
+
+def system_library(dependency, search_paths):
+    if dependency.startswith(('/System/Library/', '/usr/lib/')):
+        return True
+    return (dependency.startswith('@rpath/libswift') and dependency.endswith('.dylib')
+            and '/' not in dependency[7:] and '/usr/lib/swift' in search_paths)
+
+
 def sections(binary):
     result = {}
     for command, data in commands(binary):
@@ -99,6 +115,7 @@ def verify(path, injected=False):
         assert info['CFBundleVersion'] == SOURCE['build']
         main = ipa.read(app + info['CFBundleExecutable'])
         deps = list(libraries(main))
+        main_paths = list(runpaths(main))
         assert bytecode_version(ipa.read(app + 'main.jsbundle')) == SOURCE['hermesVersion']
         for selector in (b'instance:didInitializeRuntime:', b'_loadScriptFromSource:', b'callFunctionOnBufferedRuntimeExecutor:', b'RCTSource'):
             assert selector in main, f'Missing React Native hook: {selector!r}'
@@ -117,9 +134,11 @@ def verify(path, injected=False):
                     magic = file.read(4)
                 if magic != b'\xcf\xfa\xed\xfe':
                     continue
-                for dep in libraries(ipa.read(name)):
+                binary = ipa.read(name)
+                search_paths = main_paths + list(runpaths(binary))
+                for dep in libraries(binary):
                     assert not any(s in dep for s in ('/var/jb/', '.jbroot', 'libroothide', 'ValencedCore.framework')) , dep
-                    if dep.startswith(('/System/Library/', '/usr/lib/')):
+                    if system_library(dep, search_paths):
                         continue
                     if dep.startswith('@rpath/'):
                         target = app + 'Frameworks/' + dep[7:]
