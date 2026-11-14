@@ -450,7 +450,7 @@ NSString *PluginErrorCodeString(PluginErrorCode code) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSString *discordVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0.0";
-        PluginVersion *apiVer = [PluginVersion versionFromString:VERSION_CODE error:nil] ?: [PluginVersion versionWithNumbers:@[@1] label:nil];
+        PluginVersion *apiVer = [PluginVersion versionFromString:API_VERSION error:nil] ?: [PluginVersion versionWithNumbers:@[@1] label:nil];
         PluginVersion *hostVer = [PluginVersion versionFromString:discordVersion error:nil] ?: [PluginVersion versionWithNumbers:@[@1] label:nil];
 
         PluginManifest *api =

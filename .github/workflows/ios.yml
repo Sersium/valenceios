@@ -101,6 +101,9 @@ jobs:
           fi
           shasum -a 256 -c SHA256SUMS
           if ! gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/latest" >/dev/null 2>&1; then
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/tags/latest -f sha="$GITHUB_SHA"
+            fi
             gh release create latest --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title 'Valenced iOS · Latest' --notes-file release-notes.md
           fi
           gh release upload latest Discord_Valenced.ipa feather.json SHA256SUMS --repo "$GITHUB_REPOSITORY" --clobber

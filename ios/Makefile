@@ -4,6 +4,7 @@ INSTALL_TARGET_PROCESSES = Discord
 THEOS_PACKAGE_SCHEME = rootless
 FINALPACKAGE = 1
 VERSION_CODE = 1.0.0
+API_VERSION = $(shell sed -n 's/^apiVersion = "\(.*\)"/\1/p' ../gradle/libs.versions.toml)
 
 THEOS ?= $(HOME)/theos
 export THEOS
@@ -13,7 +14,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = ValencedTweak
 
 ValencedTweak_FILES = $(wildcard Sources/*.x Sources/*.xm Sources/*.m Sources/*.mm Sources/**/*.x Sources/**/*.xm Sources/**/*.m Sources/**/*.mm)
-ValencedTweak_CFLAGS = -fobjc-arc -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -DVERSION_CODE='@"$(VERSION_CODE)"' -I$(THEOS_PROJECT_DIR)/Headers
+ValencedTweak_CFLAGS = -fobjc-arc -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -DVERSION_CODE='@"$(VERSION_CODE)"' -DAPI_VERSION='@"$(API_VERSION)"' -I$(THEOS_PROJECT_DIR)/Headers
 ValencedTweak_CCFLAGS = -std=c++17 -Wno-c++11-narrowing -I$(THEOS_PROJECT_DIR)/Headers
 ValencedTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers Security AuthenticationServices
 ValencedTweak_LDFLAGS = -undefined dynamic_lookup -lz
