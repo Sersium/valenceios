@@ -14,7 +14,8 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = ValencedTweak
 
 ValencedTweak_FILES = $(wildcard Sources/*.x Sources/*.xm Sources/*.m Sources/*.mm Sources/**/*.x Sources/**/*.xm Sources/**/*.m Sources/**/*.mm)
-ValencedTweak_CFLAGS = -fobjc-arc -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -DVERSION_CODE='@"$(VERSION_CODE)"' -DAPI_VERSION='@"$(API_VERSION)"' -I$(THEOS_PROJECT_DIR)/Headers
+# shortcut: inherited UIKit APIs remain available; migrate if a future SDK removes them.
+ValencedTweak_CFLAGS = -fobjc-arc -Wno-error=deprecated-declarations -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -DVERSION_CODE='@"$(VERSION_CODE)"' -DAPI_VERSION='@"$(API_VERSION)"' -I$(THEOS_PROJECT_DIR)/Headers
 ValencedTweak_CCFLAGS = -std=c++17 -Wno-c++11-narrowing -I$(THEOS_PROJECT_DIR)/Headers
 ValencedTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers Security AuthenticationServices
 ValencedTweak_LDFLAGS = -undefined dynamic_lookup -lz
