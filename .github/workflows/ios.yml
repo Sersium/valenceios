@@ -23,6 +23,10 @@ jobs:
           persist-credentials: false
       - name: Check packaging tests
         run: python3 -m unittest discover -s tests -v
+      - name: Check cache invalidation across bundle updates
+        run: |
+          clang -fobjc-arc -Wno-deprecated-declarations -framework Foundation -Iios/Headers ios/Sources/CacheIdentity.m tests/check_cache_identity.m -o "$RUNNER_TEMP/check-cache-identity"
+          "$RUNNER_TEMP/check-cache-identity"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin

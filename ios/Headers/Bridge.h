@@ -17,6 +17,7 @@ typedef NSDictionary * _Nonnull (^ _Nonnull BridgeHandler)(NSArray * _Nonnull ar
 NSMutableDictionary<NSString *, BridgeHandler> *bridgeHandlers(void);
 
 void RegisterBridgeMethods(void);
+void RegisterCachesMethods(NSData * _Nullable hostBundle);
 
 // ValencedBridge.callJSMethod
 extern NSString * const EVENT_DOWNLOAD_PROGRESS;           // valenced.plugins.events.downloadProgress

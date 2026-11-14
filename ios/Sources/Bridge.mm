@@ -142,7 +142,6 @@ BOOL argIsString(NSArray *args, NSUInteger idx) {
 extern "C" {
 void RegisterPluginLoaderMethods(void);
 void RegisterRepoMethods(void);
-void RegisterCachesMethods(void);
 void RegisterAdditionalBridgeMethods(void);
 void RegisterThemesBridgeMethods(void);
 }
@@ -162,7 +161,6 @@ void RegisterBridgeMethods(void) {
     RegisterPluginLoaderMethods();
     RegisterPluginStatesMethods();
     RegisterRepoMethods();
-    RegisterCachesMethods();
     RegisterAdditionalBridgeMethods();
     RegisterRecoveryBridgeMethods();
     RegisterThemesBridgeMethods();

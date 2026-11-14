@@ -218,6 +218,7 @@ static void injectValencedScripts(id instance)
     gScriptsInjected = YES;
     ValencedLog(@"Intercepted script load, injecting Valenced before host bundle");
     @try {
+        RegisterCachesMethods([(RCTSource *)source data]);
         injectValencedScripts(self);
     } @catch (NSException *e) {
         ValencedLog(@"Valenced script injection failed: %@ %@", e.name, e.reason);

@@ -2,6 +2,7 @@
 #import "Constants.h"
 #import "Utils.h"
 #import "Logger.h"
+#import "CacheIdentity.h"
 
 static const int kModulesCacheVersion = 3;
 static const int kAssetsCacheVersion = 2;
@@ -14,6 +15,7 @@ static NSDictionary *ModulesCacheToMap(NSArray<NSNumber *> *blacklist,
 static BOOL ModulesCacheSaveToFile(NSURL *file,
                                    NSArray<NSNumber *> *blacklist,
                                    NSDictionary<NSString *, id> *finds) {
+    if (!file) return NO;
     NSMutableData *out = DataOutputBuffer();
     DataOutputWriteInt(out, kModulesCacheVersion);
 
@@ -40,6 +42,7 @@ static BOOL ModulesCacheSaveToFile(NSURL *file,
 }
 
 static NSDictionary *ModulesCacheLoadFromFileOrNull(NSURL *file) {
+    if (!file) return nil;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSDictionary *attrs = [fm attributesOfItemAtPath:file.path error:nil];
     if (!attrs || [attrs[NSFileSize] longLongValue] <= 0) return nil;
@@ -96,6 +99,7 @@ static NSDictionary *AssetsCacheToMap(NSDictionary<NSString *, NSDictionary *> *
 }
 
 static BOOL AssetsCacheSaveToFile(NSURL *file, NSDictionary<NSString *, NSDictionary *> *data) {
+    if (!file) return NO;
     NSMutableData *out = DataOutputBuffer();
     DataOutputWriteInt(out, kAssetsCacheVersion);
     DataOutputWriteInt(out, (int)data.count);
@@ -113,6 +117,7 @@ static BOOL AssetsCacheSaveToFile(NSURL *file, NSDictionary<NSString *, NSDictio
 }
 
 static NSDictionary *AssetsCacheLoadFromFileOrNull(NSURL *file) {
+    if (!file) return nil;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSDictionary *attrs = [fm attributesOfItemAtPath:file.path error:nil];
     if (!attrs || [attrs[NSFileSize] longLongValue] <= 0) return nil;
@@ -149,14 +154,14 @@ static NSDictionary *AssetsCacheLoadFromFileOrNull(NSURL *file) {
     return AssetsCacheToMap(parsed);
 }
 
-void RegisterCachesMethods(void) {
-    NSString *versionTag = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown";
+void RegisterCachesMethods(NSData *hostBundle) {
+    NSString *identity = ValencedCacheIdentity(hostBundle, ValencedEmbeddedSection("__vbundle"));
 
     NSURL *valencedCacheDir = [getValencedDirectory() URLByAppendingPathComponent:CACHE_DIR];
     [[NSFileManager defaultManager] createDirectoryAtURL:valencedCacheDir
                              withIntermediateDirectories:YES attributes:nil error:nil];
-    NSURL *modulesCacheFile = [valencedCacheDir URLByAppendingPathComponent:[NSString stringWithFormat:@"modules.%@", versionTag]];
-    NSURL *assetsCacheFile = [valencedCacheDir URLByAppendingPathComponent:[NSString stringWithFormat:@"assets.%@", versionTag]];
+    NSURL *modulesCacheFile = identity ? [valencedCacheDir URLByAppendingPathComponent:[@"modules." stringByAppendingString:identity]] : nil;
+    NSURL *assetsCacheFile = identity ? [valencedCacheDir URLByAppendingPathComponent:[@"assets." stringByAppendingString:identity]] : nil;
     ValencedLog(@"modules cache at: %@, assets cache at: %@", modulesCacheFile.lastPathComponent, assetsCacheFile.lastPathComponent);
 
     __block NSDictionary *modulesCache = nil;
