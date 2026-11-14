@@ -20,14 +20,7 @@ ValencedTweak_CCFLAGS = -std=c++17 -Wno-c++11-narrowing -I$(THEOS_PROJECT_DIR)/H
 ValencedTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers Security AuthenticationServices
 ValencedTweak_LDFLAGS = -undefined dynamic_lookup -lz
 
-ifneq ($(VALENCED_CORE_LIB),)
 ValencedTweak_LDFLAGS += -Wl,-force_load,$(VALENCED_CORE_LIB)
-else
-ValencedTweak_FRAMEWORKS += ValencedCore
-ValencedTweak_CFLAGS += -F$(VALENCED_CORE_FW)
-ValencedTweak_CCFLAGS += -F$(VALENCED_CORE_FW)
-ValencedTweak_LDFLAGS += -F$(VALENCED_CORE_FW) -Wl,-force_load,$(VALENCED_CORE_FW)/ValencedCore
-endif
 
 ifneq ($(VALENCED_BUNDLE_DIR),)
 ValencedTweak_LDFLAGS += -Wl,-sectcreate,__DATA,__vbundle,$(VALENCED_BUNDLE_DIR)/valenced.bundle
